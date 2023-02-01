@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	    <flow name="get:\reports:uhub-sapi-config">
+        <set-variable value='#[attributes.headers."x-correlation-id" default ""]' doc:name="Set correlationId" doc:id="b54067ea-a65f-4db8-b773-b36acfa1d9fb" variableName="correlationID"/>
+		<logger level="INFO" doc:name="Start Log" doc:id="36fd4885-0eed-4a96-849b-22ad514a6d96" message="transactionID: #[vars.transactionId], correlationId: #[vars.correlationID], message: Started get covid report case flow, payload #[payload]"/>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="9604f5c4-454d-4ab1-a223-b234b8dda329" doc:name="Preparing Dynamic Query">
+            <ee:message>
+            </ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="reportsDynamicQuery" ><![CDATA[if (!isEmpty(attributes.queryParams.state)) (
+	"select count(*) as count, case_type, state from sakila.cvd_case_master where state = '" ++ upper(attributes.queryParams.state) ++ "' group by case_type, state"
+) else (
+	"select count(*) as count, case_type, state from sakila.cvd_case_master group by case_type, state" 
+)
+]]></ee:set-variable>
+			</ee:variables>
+        
+</ee:transform>
+		<flow-ref doc:name="get-covid-report-sub-flow" doc:id="8bb591aa-1b46-46a6-b536-69cee9aa7e1e" name="get-covid-report-sub-flow"/>
+		<ee:transform doc:name="Preparing Response" doc:id="66b13745-3d7b-4aeb-ac6e-290d89a70c1f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3d60308a-7797-430d-a881-14a7c52d735c" />
+    
+</flow>
+	
+	
+	</mule>

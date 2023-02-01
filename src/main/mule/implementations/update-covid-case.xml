@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <flow name="put:\cases:application\json:uhub-sapi-config">
+        <set-variable value="#[attributes.headers.'x-correlation-id' default &quot;&quot;]" doc:name="Set correlationId" doc:id="2e5ca47e-7baa-4885-9eea-a2d9d0c88ed8" variableName="correlationId"/>
+		<logger level="INFO" doc:name="Start Log" doc:id="cfae098f-0b76-4dcf-bd15-bb9fa6463532" message="transactionID: #[vars.transactionId], correlationId: #[vars.correlationId], message: Started register covid case flow, payload #[payload]"/>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+var currentDate = now() as String { format: "yyyy-MM-dd" } 
+---
+{
+	"case_ID": payload.caseID,
+  "source": payload.source,
+   "case_type": payload.caseType,
+   "first_name": payload.firstName,
+   "last_name": payload.lastName,
+   "phone": payload.phone,
+   "email": payload.email,
+   "date_of_birth": payload.dateOfBirth as String {format: "yyyy-MM-dd"},
+   "national_id": payload.nationalID,
+   "national_id_type": payload.nationalIDType,
+      "street_address": payload.address.streetAddress,
+      "city": payload.address.city,
+      "state": payload.address.state,
+      "postal": payload.address.postal,
+      "country": payload.address.country,
+      "create_date": currentDate,
+      "update_date": currentDate,
+      "create_by": "UHIS",
+      "update_by": "UHIS"
+   }
+]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<flow-ref doc:name="Flow Reference" doc:id="6e76a6c4-2560-45bf-ad7e-c4bc4ded4063" name="update-covid-case-sub-flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="4738d79a-9565-4030-b710-1ea6ca80ee21" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if (payload.affectedRows > 0){
+	 caseID: vars.covidCasePayload.case_id
+} else {}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End Log" doc:id="0cf93322-ca44-4956-a57d-c72f3636b881" message='transactionID: #[vars.transactionId]], correlationID: #[vars.correlationId], message: "Completed update covid case flow", payload: #[payload]'/>
+    
+</flow>
+	</mule>
